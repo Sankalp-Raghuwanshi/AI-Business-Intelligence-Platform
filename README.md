@@ -20,7 +20,7 @@ Built on the [Olist Brazilian E-Commerce Dataset](https://www.kaggle.com/dataset
 ## 🚀 Setup
 1. Clone the repo
 2. Install dependencies: `pip install -r requirements.txt`
-3. Add Groq API key to `.env`: `GROQ_API_KEY=your_key`
+3. Add Groq API key to `.env`: `GROQ_API_KEY=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`
 4. Export data to SQLite: `python3 setup_db.py`
 5. Run: `streamlit run app.py`
 
