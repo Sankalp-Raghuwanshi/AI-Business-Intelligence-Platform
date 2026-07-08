@@ -7,6 +7,13 @@ import re
 from dotenv import load_dotenv
 import os
 
+# Page navigation
+page = st.sidebar.radio("Navigation", ["📊 Dashboard", "🤖 ML Predictions"])
+
+if page == "🤖 ML Predictions":
+    exec(open("predict.py").read())
+    st.stop()
+
 load_dotenv()
 
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -95,6 +102,78 @@ def generate_insight(question, df_result):
         "Do not use any markdown formatting like asterisks or underscores. Plain text only. "
     )
     return call_llm(prompt)
+
+def decompose_question(question, schema):
+    prompt = (
+        "You are a data analyst. A user asked this broad business question: " + question + " "
+        "Break this into exactly 3 specific SQL-answerable sub-questions about the database. "
+        "The database schema is: " + schema + " "
+        "Return ONLY a numbered list like this format: "
+        "1. [specific question] "
+        "2. [specific question] "
+        "3. [specific question] "
+        "Each question must be answerable with a single SQL query on master_orders table. "
+        "No explanations, just the 3 numbered questions."
+    )
+    return call_llm(prompt)
+
+def extract_questions(text):
+    lines = text.strip().split('\n')
+    questions = []
+    for line in lines:
+        line = line.strip()
+        if line and line[0].isdigit() and '.' in line:
+            question = line.split('.', 1)[1].strip()
+            if question:
+                questions.append(question)
+    return questions[:3]
+
+def deep_analysis(question, schema):
+    results_context = ""
+    sub_questions = []
+    
+    # Step 1: Decompose into sub-questions
+    decomposed = decompose_question(question, schema)
+    sub_questions = extract_questions(decomposed)
+    
+    if not sub_questions:
+        return None, [], "Could not decompose question"
+    
+    # Step 2: Run SQL for each sub-question
+    retrieved_data = []
+    for i, sub_q in enumerate(sub_questions):
+        sql_response = generate_sql(sub_q, schema)
+        sql_query = extract_sql(sql_response)
+        
+        if sql_query:
+            df, error = run_query(sql_query)
+            if df is not None and len(df) > 0:
+                retrieved_data.append({
+                    'question': sub_q,
+                    'sql': sql_query,
+                    'result': df
+                })
+                results_context += f"\nSub-question {i+1}: {sub_q}\n"
+                results_context += f"Data: {df.head(5).to_string()}\n"
+    
+    if not results_context:
+        return None, sub_questions, "No data retrieved"
+    
+    # Step 3: Synthesize comprehensive answer
+    synthesis_prompt = (
+        "You are a Senior Business Analyst. A user asked: " + question + " "
+        "You retrieved the following data from the database to answer it: "
+        + results_context +
+        "Write a comprehensive 4-6 sentence analysis that: "
+        "1. Directly answers the user's question with specific numbers "
+        "2. Explains the root causes based on the data "
+        "3. Identifies the most important pattern across all retrieved data "
+        "4. Gives one concrete business recommendation "
+        "Use plain text only, no markdown symbols or bullet points. Be specific and data-driven."
+    )
+    
+    synthesis = call_llm(synthesis_prompt)
+    return retrieved_data, sub_questions, synthesis
 
 def generate_executive_summary():
     conn = get_connection()
@@ -246,6 +325,39 @@ with st.sidebar:
 
 
 st.markdown("### Ask a question about your data")
+# Deep Analysis / RAG Section
+st.markdown("### 🔬 Deep Analysis")
+st.markdown("Ask broad business questions — AI retrieves relevant data automatically and synthesizes a comprehensive answer.")
+
+deep_question = st.text_input(
+    "",
+    placeholder="e.g. Why are customers in Amazonas unhappy? What is driving revenue growth?",
+    key="deep_q"
+)
+
+if deep_question:
+    with st.spinner("🔍 Step 1: Breaking down your question..."):
+        retrieved_data, sub_questions, synthesis = deep_analysis(deep_question, schema)
+    
+    if sub_questions:
+        st.markdown("**🧩 Question decomposed into:**")
+        for i, q in enumerate(sub_questions):
+            st.markdown(f"{i+1}. {q}")
+    
+    if retrieved_data:
+        with st.expander("📊 Retrieved Data (click to expand)", expanded=False):
+            for item in retrieved_data:
+                st.markdown(f"**{item['question']}**")
+                st.dataframe(item['result'], use_container_width=True)
+                st.markdown("---")
+    
+    if synthesis and synthesis != "No data retrieved" and synthesis != "Could not decompose question":
+        st.markdown("### 🧠 Comprehensive Analysis")
+        st.info(synthesis)
+    else:
+        st.warning("Could not retrieve enough data. Try rephrasing your question.")
+
+st.markdown("---")
 # KPI Cards
 st.markdown("### 📈 Key Performance Indicators")
 total_revenue, total_orders, avg_review, avg_delivery = get_kpis()
