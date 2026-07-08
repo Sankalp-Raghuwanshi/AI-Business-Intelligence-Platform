@@ -205,9 +205,57 @@ would feed output of one LLM call into input of the next.
 - python-dotenv — environment variable management
 - SQLAlchemy — database connection for data export
 
+## Day 3 — ML Models (July 6, 2026)
+
+### What I built
+- Delivery Delay Predictor (XGBoost, 64% recall on delayed orders)
+- Review Score Predictor (RandomForest multiclass, 54% recall on low reviews)
+- Customer Segmentation (KMeans, 4 segments via RFM analysis)
+- ML Prediction page in Streamlit with 3 tabs
+
+### Key concepts learned
+- **Class Imbalance** — when one outcome is much rarer (7.5% delays),
+  model takes lazy shortcut of predicting majority class always.
+  Fix: class_weight='balanced' or scale_pos_weight in XGBoost.
+- **Precision vs Recall tradeoff** — precision = when we predict delay,
+  how often are we right? Recall = of all actual delays, how many did
+  we catch? For delay prediction, recall matters more than precision —
+  better to over-flag than miss real delays.
+- **Feature Engineering** — created 3 new features from existing data:
+  freight_ratio, is_holiday_season, seller_customer_same_state.
+  seller_customer_same_state became 3rd most important feature —
+  cross-state deliveries delay more.
+- **XGBoost vs RandomForest** — XGBoost builds trees sequentially,
+  each correcting previous errors (boosting). RandomForest builds
+  independently and votes (bagging). XGBoost generally outperforms
+  on tabular data.
+- **RFM Analysis** — Recency, Frequency, Monetary segmentation.
+  Standard e-commerce technique for customer segmentation.
+  KMeans clusters customers into groups based on buying behavior.
+- **Label Encoding** — converting text categories to numbers for ML.
+  Works for tree models but assumes ordinal relationship.
+- **joblib** — saving trained models to disk so app doesn't retrain
+  every time it loads.
+
+### Key findings from models
+- order_month is the strongest delay predictor (seasonality)
+- seller_customer_same_state is 3rd most important — cross-state = more delays
+- delivery_days + delay_flag top features for review prediction —
+  confirms EDA finding that delivery drives satisfaction
+- 19 VIP/Whale customers averaging R$26K per order — likely B2B
+
+### Interview talking points
+- "I discovered class imbalance when 92% accuracy masked the fact
+  the model was just predicting On Time for everything. Fixed with
+  balanced class weights, dropping accuracy to 80% but improving
+  delayed recall from 1% to 64%."
+- "Feature engineering added a same-state delivery flag which became
+  the 3rd most important predictor — a finding my EDA hadn't surfaced."
+- "The ML models validated my EDA conclusions independently —
+  delivery_days being the top review predictor confirms what I found
+  analytically."
+
 ## Roadmap (upcoming)
-- [ ] Delivery delay prediction ML model (RandomForest classifier)
-- [ ] Review score prediction ML model (multiclass classification)
 - [ ] Pre-built analysis buttons (Revenue/Delivery/Customer analysis)
 - [ ] Multi-step reasoning for "why" questions
 - [ ] Streamlit Cloud deployment
