@@ -216,46 +216,66 @@ would feed output of one LLM call into input of the next.
 ### Key concepts learned
 - **Class Imbalance** — when one outcome is much rarer (7.5% delays),
   model takes lazy shortcut of predicting majority class always.
-  Fix: class_weight='balanced' or scale_pos_weight in XGBoost.
-- **Precision vs Recall tradeoff** — precision = when we predict delay,
-  how often are we right? Recall = of all actual delays, how many did
-  we catch? For delay prediction, recall matters more than precision —
-  better to over-flag than miss real delays.
-- **Feature Engineering** — created 3 new features from existing data:
-  freight_ratio, is_holiday_season, seller_customer_same_state.
-  seller_customer_same_state became 3rd most important feature —
-  cross-state deliveries delay more.
-- **XGBoost vs RandomForest** — XGBoost builds trees sequentially,
-  each correcting previous errors (boosting). RandomForest builds
-  independently and votes (bagging). XGBoost generally outperforms
-  on tabular data.
+  Fix: class_weight='balanced' or scale_pos_weight in XGBoost
+- **Precision vs Recall tradeoff** — for delay prediction, recall 
+  matters more than precision. Better to over-flag than miss real delays
+- **Feature Engineering** — created freight_ratio, is_holiday_season,
+  seller_customer_same_state. Same-state flag became 3rd most important
+  feature — cross-state deliveries delay more
+- **XGBoost vs RandomForest** — XGBoost builds trees sequentially
+  correcting previous errors (boosting). RandomForest builds
+  independently and votes (bagging). XGBoost outperforms on tabular data
 - **RFM Analysis** — Recency, Frequency, Monetary segmentation.
-  Standard e-commerce technique for customer segmentation.
-  KMeans clusters customers into groups based on buying behavior.
-- **Label Encoding** — converting text categories to numbers for ML.
-  Works for tree models but assumes ordinal relationship.
+  KMeans clusters customers into behavioral groups
 - **joblib** — saving trained models to disk so app doesn't retrain
-  every time it loads.
+  every time it loads
 
-### Key findings from models
-- order_month is the strongest delay predictor (seasonality)
-- seller_customer_same_state is 3rd most important — cross-state = more delays
-- delivery_days + delay_flag top features for review prediction —
-  confirms EDA finding that delivery drives satisfaction
+### Key findings
+- order_month strongest delay predictor — seasonality drives delays
+- seller_customer_same_state 3rd most important — cross-state = more delays
+- delivery_days + delay_flag top features for review prediction
 - 19 VIP/Whale customers averaging R$26K per order — likely B2B
 
 ### Interview talking points
-- "I discovered class imbalance when 92% accuracy masked the fact
-  the model was just predicting On Time for everything. Fixed with
-  balanced class weights, dropping accuracy to 80% but improving
-  delayed recall from 1% to 64%."
+- "Discovered class imbalance when 92% accuracy masked the model
+  predicting On Time for everything. Fixed with balanced class weights,
+  dropping accuracy to 80% but improving delayed recall from 1% to 64%"
 - "Feature engineering added a same-state delivery flag which became
-  the 3rd most important predictor — a finding my EDA hadn't surfaced."
-- "The ML models validated my EDA conclusions independently —
-  delivery_days being the top review predictor confirms what I found
-  analytically."
+  3rd most important predictor — a finding EDA hadn't surfaced"
+- "ML models independently validated EDA conclusions — delivery_days
+  being top review predictor confirms what I found analytically"
 
-## Roadmap (upcoming)
-- [ ] Pre-built analysis buttons (Revenue/Delivery/Customer analysis)
-- [ ] Multi-step reasoning for "why" questions
-- [ ] Streamlit Cloud deployment
+## Day 4 — RAG Deep Analysis (July 8, 2026)
+
+### What I built
+- Deep Analysis mode using RAG over structured data
+- Question decomposition: broad question → 3 specific sub-questions
+- Multi-query retrieval: each sub-question → SQL → results retrieved
+- Synthesis: all results combined as context → comprehensive AI answer
+
+### What RAG means in this context
+Standard RAG retrieves text documents then feeds to LLM.
+This project uses RAG over structured data — retrieves SQL query
+results instead of documents. Same concept, different data source.
+AI is grounded in retrieved facts rather than training memory.
+
+### Why RAG matters
+Without RAG: AI answers only questions that map to one SQL query.
+With RAG: AI answers broad analytical questions by retrieving
+multiple data sources and reasoning across them.
+"Why are customers unhappy?" requires delivery data, review data,
+AND category data — RAG retrieves all three and synthesizes one answer.
+
+### Prompt chaining used
+Chain 1: Question → decompose into 3 sub-questions
+Chain 2: Each sub-question → SQL query
+Chain 3: All SQL results → comprehensive synthesis
+Three separate LLM calls, each feeding into the next.
+
+### Interview talking point
+"I implemented RAG over structured data — instead of retrieving
+text documents, my system retrieves SQL query results. The AI
+decomposes broad questions into specific sub-queries, retrieves
+data from each, then synthesizes an answer grounded in real data.
+Every number in the response came from an actual database query —
+the AI cannot hallucinate statistics."
