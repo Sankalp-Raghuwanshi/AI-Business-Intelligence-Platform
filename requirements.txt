@@ -4,3 +4,7 @@ pandas
 plotly
 python-dotenv
 sqlalchemy
+psycopg2-binary
+scikit-learn
+xgboost
+joblib
