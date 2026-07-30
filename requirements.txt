@@ -7,4 +7,4 @@ sqlalchemy
 psycopg2-binary
 scikit-learn
 xgboost
-joblib
+joblibsentence-transformers
