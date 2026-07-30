@@ -30,7 +30,7 @@ EMBED_CACHE = os.path.join("data", "kb_embeddings.npz")
 EMBED_MODEL_NAME = "all-MiniLM-L6-v2"
 
 
-def _chunk(text: str, chunk_size: int = 800, overlap: int = 100) -> list[str]:
+def _chunk(text: str, chunk_size: int = 800, overlap: int = 100):
     chunks = []
     start = 0
     while start < len(text):
@@ -85,7 +85,7 @@ class RAGAgent:
         )
         return chunks, sources, embeddings
 
-    def retrieve(self, query: str) -> list[dict]:
+    def retrieve(self, query: str):
         if len(self.chunks) == 0:
             return []
         query_emb = self.embedder.encode([query], normalize_embeddings=True)[0]

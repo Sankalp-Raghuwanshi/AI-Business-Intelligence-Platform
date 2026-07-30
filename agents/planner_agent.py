@@ -52,7 +52,7 @@ class PlannerAgent:
         self.client = client
         self.model = model
 
-    def plan(self, user_query: str, schema: str) -> list[dict]:
+    def plan(self, user_query: str, schema: str):
         prompt = (
             f"Database schema: {schema}\n\n"
             f"User question: {user_query}\n\n"
@@ -70,7 +70,7 @@ class PlannerAgent:
         raw = response.choices[0].message.content.strip()
         return self._parse(raw, user_query)
 
-    def _parse(self, raw: str, user_query: str) -> list[dict]:
+    def _parse(self, raw: str, user_query: str):
         match = re.search(r"\{.*\}", raw, re.DOTALL)
         json_str = match.group(0) if match else raw
         try:

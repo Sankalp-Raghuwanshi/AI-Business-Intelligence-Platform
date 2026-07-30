@@ -58,7 +58,7 @@ class SQLAgent:
         return self._call_llm(prompt)
 
     @staticmethod
-    def _extract_sql(text: str) -> str | None:
+    def _extract_sql(text: str):
         match = re.search(r"```sql\n(.*?)```", text, re.DOTALL)
         if match:
             return match.group(1).strip()
